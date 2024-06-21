@@ -1,0 +1,68 @@
+
+config MV_INCLUDE_PRESTERA
+	bool "Prestera Switch Support"
+	depends on ARCH_MVEBU
+#	select MV_INCLUDE_PRESTERA_PCI if MACH_ARMADA_XP_AMC
+	default y
+	help
+	Add Prestera mvPP char device driver support,
+	used by user space to configure and interact with
+	Prestera Packet Procesors, supporting switches connected
+	via PCIe to AMC/AXP and MSYS.
+	This option should be enabled when using CPSS.
+
+config MV_SET_LINK_DOWN_DELAY
+        int "Set the link down delay in ms"
+        range 3000 120000
+        depends on MV_INCLUDE_PRESTERA
+        default "3000"
+        help
+        Modify the default link down delay for allowing faster
+        ROS bring up in case the management port is not UP
+        and the IP address is yet not assigned to it.
+
+config MV_INCLUDE_PRESTERA_PCI
+	bool "Prestera Switch Support for PCI endpoint"
+	depends on MV_INCLUDE_PRESTERA
+	default y
+	help
+	this option increase virtual memory
+	allocation in case of ARMADA XP AMC
+	board for CPSS devices connected to
+	PCI switch
+
+config MV_INCLUDE_PRESTERA_KERNELEXT
+	tristate "Prestera mvKernelExt"
+	depends on MV_INCLUDE_PRESTERA
+	default y
+	help
+	Add Prestera mvKernelExt char device driver support,
+	used by user space to configure and interact with
+	Prestera Packet Processors, supporting switches connected
+	via PCIe to AMC/AXP and MSYS.
+	This option should be enabled when using CPSS.
+
+
+config MV_FORCE_CPSS_BOARD_ID_PRESTERA_IOCTL
+	bool "Force Prestera CPSS Board ID in IOCTL"
+	depends on MV_INCLUDE_PRESTERA
+	default n
+	---help---
+	Force the prestera Board ID returned by IOCTL.
+
+	This option enables enforcement of Prestera Board ID returned by
+	PRESTERA_IOC_GETBOARDID instead of reading a real ID from
+	Marvell on-board EEPROM.
+	Select this option when using non-Marvell boards without on-board
+	EEPROM or for bringing up new systems with not yet supported IDs.
+
+config  MV_FORCED_CPSS_BOARD_ID_VALUE
+	hex "Prestera enforced CPSS Board ID value"
+	depends on MV_FORCE_CPSS_BOARD_ID_PRESTERA_IOCTL
+	# the default value of 0x50 represents DB_BOBK_ID
+	default 0x50
+	---help---
+	Prestera enforced Board ID value.
+
+	Specifies the Board ID to be returned by Prestera driver
+	PRESTERA_IOC_GETBOARDID call when the Board ID enforcement is active.

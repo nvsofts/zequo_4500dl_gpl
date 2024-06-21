@@ -1,0 +1,176 @@
+/*
+ * Device Tree file for Marvell AlleyCat3 development board
+ * (DB-XC3-24G4XG)
+ *
+ * Copyright (C) 2015 Marvell
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "msys-ac3.dtsi"
+
+/ {
+	model = "Marvell AlleyCat3 Extreme Board";
+	compatible = "marvell,msys", "marvell,msys-ac3",
+		     "marvell,msys-ac3-db";
+
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		/*
+                 * 1GB of plug-in RAM modules by default. The amount
+                 * of memory available can be changed by the
+                 * bootloader according the size of the module
+                 * actually plugged.
+		 */
+		device_type = "memory";
+		reg = <0x00000000 0x00000000 0x00000000 0x40000000>;
+	};
+
+	/*this field is read by mts-arch.c file to classify the project type - dont change!	*/
+	dts_file {
+		file_name = __FILE__;
+	};
+	
+	soc {
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
+			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+			  MBUS_ID(0x03, 0x00) 0 0 0xf8000000 0x4000000	/* switch */
+			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000	/* dfx */
+			  MBUS_ID(0x0a, 0x00) 0 0 0x80000000 0x8000000>; /* dragonite*/
+
+		devbus-bootcs {
+
+			/* Read parameters */
+			devbus,bus-width    = <16>;
+			devbus,turn-off-ps  = <60000>;
+			devbus,badr-skew-ps = <0>;
+			devbus,acc-first-ps = <124000>;
+			devbus,acc-next-ps  = <248000>;
+			devbus,rd-setup-ps  = <0>;
+			devbus,rd-hold-ps   = <0>;
+
+			/* Write parameters */
+			devbus,sync-enable = <0>;
+			devbus,wr-high-ps  = <60000>;
+			devbus,wr-low-ps   = <60000>;
+			devbus,ale-wr-ps   = <60000>;
+
+			/* NOR 16 MiB */
+			nor@0 {
+				compatible = "cfi-flash";
+				reg = <0 0x1000000>;
+				bank-width = <2>;
+			};
+		};
+
+		pcie-controller {
+			status = "okay";
+
+			pcie@1,0 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pex_pin>;
+				status = "okay";
+			};
+		};
+
+		internal-regs {
+			serial@12000 {
+				status = "okay";
+			};
+
+			serial@12100 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart1_pins>;
+				status = "okay";
+			};
+
+			ethernet@70000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "sgmii";
+			};
+
+			ethernet@74000 {
+				status = "okay";
+				phy = <&phy1>;
+				phy-mode = "sgmii";
+			};
+
+			mdio {
+				phy0: ethernet-phy@0 {
+					reg = <999>;
+				};
+
+				phy1: ethernet-phy@1 {
+					reg = <999>;
+				};
+			};
+
+			spi0: spi@10600 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&spi_pins>;
+				status = "okay";
+
+				spi-flash@0 {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "mx25l25635e";
+					reg = <0>; /* Chip select 0 */
+					spi-max-frequency = <108000000>;
+				};
+			};
+
+			usb@50000 {
+				status = "okay";
+			};
+
+			nfc: nand-flash@d0000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&nand_pins>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				status = "okay";
+
+				nfc,nfc-mode  = "normal";       /* normal or ganged */
+				nfc,nfc-dma   = <0>;            /* 0 for no, 1 for dma */
+				nfc,nfc-width = <8>;
+				nfc,ecc-type  = <1>;            /* 4 bit */
+				nfc,num-cs    = <1>;
+			};
+
+			i2c0: i2c@11000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c0_pins>;
+				eeprom@50 {
+					compatible = "at,24c64";
+					pagesize = <32>;
+					reg = <0x50>;
+					marvell,board_id_reg = <0x7>;
+				};
+			};
+		};
+
+		prestera {
+			pinctrl-names = "default", "default";
+			pinctrl-0 = <&pp_pin>;
+			pinctrl-1 = <&slvsmi_pins>;
+			status = "okay";
+			/*  the CPSS board ID can be enforced
+			cpss_force_board_id = <0x30>; */
+		};
+
+		addr-compl {
+			compatible = "marvell,msys-addr-compl";
+			reg = <MBUS_ID(0x03, 0x00) 0 0x200>; /* Switch MG register base */
+		};
+	};
+};

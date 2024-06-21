@@ -1,0 +1,102 @@
+#
+# Marvell misc devices
+#
+
+if ARCH_MVEBU || ARCH_MSYS
+
+menu "Marvell misc devices"
+config MVEBU_CM3
+	tristate "Marvell cm3 device"
+	depends on MACH_MSYS
+	---help---
+	  This option enables support for Marvell cm3 driver. The CM3 CPU is
+	  a offloading co-processor integrated with Marvell MSYS SoCs.
+
+	  If unsure, say N.
+
+config MV_CM3_IPC_SUPPORT
+	tristate "CM3 IPC support"
+	depends on MVEBU_CM3
+	select MV_IPC_FREERTOS_DRIVER
+	---help---
+	  This option enables communication between the Host CPU to the
+	  FreeRTOS system on CM3 via IPC infrastucture.
+
+	  If unsure, say N.
+
+config MV_IPC_FREERTOS_DRIVER
+	tristate "FreeRTOS IPC Infrastructure support"
+	depends on MACH_MSYS
+	---help---
+	  This option enables support for Marvell IPC infrastructure.
+	  It allows to use IPC service to communicate with the FreeRTOS
+	  system on CM3, Dragonite and ServiceCPU in AMP mode.
+	  Need to enable the individual configuration in the
+	  CM3/Dragonite/ServiceCPU driver.
+
+	  If unsure, say N.
+
+config MV_INCLUDE_DRAGONITE_XCAT
+	tristate "Marvell dragonite device"
+	depends on MACH_MSYS
+	select MSYS_ADDR_COMPL
+	default y
+	---help---
+	  This option enables support for Marvell dragonite driver.
+	  The dragonite CPU is a offloading co-processor integrated
+	  with Marvell MSYS SoCs.
+	  The host CPU and the dragonite CPU share ITCM and DTCM.
+
+config DRAGONITE_JTAG_ENABLE
+	bool "Enables JTAG debugging for dragonite"
+	default n
+	depends on MV_INCLUDE_DRAGONITE_XCAT
+	---help---
+	Selects if the dragonite JTAG debug is enabled.
+	if selected JATG debugging is enabled for dragonite
+	and disabled for main CPU. If not selected, JATG debugging
+	is disabled for dragonite and enabled for main CPU
+
+config MV_DRAGONITE_IPC_SUPPORT
+	bool "dragonite IPC support"
+	depends on MV_INCLUDE_DRAGONITE_XCAT
+	select MV_IPC_FREERTOS_DRIVER
+	default y
+	---help---
+	This option enables communication between the Host CPU
+	to the FreeRTOS system on dragonite xcat via IPC
+	infrastucture.
+	If unsure, say N.
+
+config MSYS_ADDR_COMPL
+	depends on MACH_MSYS
+	bool "Address completion support"
+	---help---
+	Whether support address completion.
+
+config MV_INCLUDE_SERVICECPU
+	bool "MSYS Service CPU Support"
+	depends on MACH_ARMADA_380
+	select MV_INCLUDE_PRESTERA_PCI
+	---help---
+	The Service CPU is a dedicated CPU core which runs Marvell developed firmware;
+	the firmware target is to use the internal CPU power to extend
+	switch Hardwarecapabilities by performing tasks which otherwise
+	had to be developed by customer and run at the host CPU;
+	this option enables support for running Service CPU firmware
+	on the first core of MSYS CPU over the PCIe bus;
+	the platform is based on PEX connectivity via XBAR between
+	external CPU and single PP device;
+	this option is based on prestera PCI feature.
+
+config MV_SERVICECPU_IPC_SUPPORT
+	bool "serviceCPU IPC support"
+	depends on MV_INCLUDE_SERVICECPU
+	select MV_IPC_FREERTOS_DRIVER
+	default y
+	---help---
+	This option enables support for Marvell IPC driver on serviceCPU.
+	It allows to use IPC to the FreeRTOS system (on serviceCPU).
+
+endmenu
+endif #ARCH_MVEBU || ARCH_MSYS

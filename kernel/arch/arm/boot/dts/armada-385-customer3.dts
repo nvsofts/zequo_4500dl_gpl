@@ -1,0 +1,231 @@
+/*
+ * Device Tree file for Marvell Armada 388 AMC board
+ * (DB-88F6828-AMC)
+ *
+ *  Copyright (C) 2014 Marvell
+ *
+ * Nadav Haklai <nadavh@marvell.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "armada-385-388.dtsi"
+
+/ {
+	model = "Marvell Armada 388 Development General Purpose";
+	compatible = "marvell,a385-db-amc", "marvell,armada385", "marvell,armada38x";
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x00000000 0x10000000>; /* 256 MB */
+	};
+
+	soc {
+		pcie-mem-aperture = <0xa0000000 0x40000000>; /* 1 GB */
+
+		internal-regs {
+			ethernet@70000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "rgmii";
+			};
+
+			ethernet@30000 {
+				status = "disabled";
+				phy = <&phy1>;
+				phy-mode = "sgmii";
+			};
+
+			ethernet@34000 {
+				status = "okay";
+				phy = <&phy2>;
+				phy-mode = "sgmii";
+			};
+
+			i2c0: i2c@11000 {
+				status = "okay";
+				clock-frequency = <100000>;
+
+				eeprom@50 {
+					compatible = "at,24c64";
+					pagesize = <32>;
+					reg = <0x50>;
+					marvell,borad_id_reg = <0x7>;
+				};
+			};
+
+			i2c1: i2c@11100 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			mdio {
+				phy0: ethernet-phy@0 {
+					reg = <1>;
+				};
+
+				phy1: ethernet-phy@1 {
+					reg = <0>;
+				};
+
+				phy2: ethernet-phy@2 {
+					reg = <0>;
+				};
+
+			};
+
+			sdhci@d8000 {
+				broken-cd;
+				wp-inverted;
+				bus-width = <8>;
+				status = "disabled";
+				no-1-8-v;
+			};
+
+			serial@12000 {
+				status = "okay";
+			};
+
+			spi1: spi@10680 {
+				status = "okay";
+
+				spi-flash@0 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					compatible = "w25q32";
+					reg = <0>; /* Chip select 0 */
+					spi-max-frequency = <108000000>;
+					mtd0@00000000 {
+						label = "U-Boot";
+						reg = <0x00000000 0x00400000>;
+						read-only;
+					};
+
+					mtd1@00400000 {
+						label = "Root";
+						reg = <0x00400000 0x00c00000>;
+					};
+				};
+			};
+			nfc: nand@d0000 {
+				status = "okay";
+				#address-cells = <0x00000001>;
+				#size-cells = <0x00000001>;
+				nfc,nfc-mode = "normal";
+				nfc,nfc-dma = <0x00000000>;
+				nfc,nfc-width = <0x00000008>;
+				nfc,ecc-type = <0x00000002>;
+				nfc,num-cs = <0x00000001>;
+				mtd0@00000000 {
+					label = "U-Boot";
+					reg = <0x00000000 0x00600000>;
+					read-only;
+				};
+				mtd1@00600000 {
+					label = "uImage";
+					reg = <0x00600000 0x00400000>;
+					read-only;
+				};
+				mtd2@00a00000 {
+					label = "Root";
+					reg = <0x00a00000 0x3f600000>;
+				};
+			};
+			usb@58000 {
+				status = "okay";
+			};
+
+			pinctrl {
+				i2c0_en_pins: i2c0_en_pins {
+					marvell,pins = "mpp44";
+					marvell,function = "gpio";
+				};
+			};
+
+			prestera {
+				compatible = "marvell,armada-prestera", "simple-bus";
+				status = "okay";
+				/* the remote MSYS board ID can be enforced
+				cpss_force_board_id = <0x50>; */
+				servicecpu {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "marvell,msys-servicecpu";
+					status = "okay";
+					interrupts = <0x0 0x1d 0x4>;
+					sram_sections {
+						#address-cells = <1>;
+						#size-cells = <1>;
+						/* the sum of all sections' size should be equal to sram_base's size*/
+						/* there should be no gap between 2 continuous sections */
+						/* the section lable should be one of following: */
+						/* "L2 Cache", "free area", "host memory", "OAM DB", "share memory" and "firmware" */
+						/* the current sections definition is used for 512K SRAM (for BobK). */
+						/* In order to use 2M SRAM on Bobcat2 or AC3, the sections definition should be updated. */
+						sram_base = <0 0x80000>;	/*sram base offset and size in service cpu pci window*/
+						sram_section@0 {
+							label = "L2 Cache";
+							reg = <0 0x20000>;	/*section offset to sram_base and section size*/
+						};
+
+						sram_section@0x20000 {
+							label = "host memory";
+							reg = <0x20000 0x20000>;
+						};
+
+						sram_section@0x40000 {
+							label = "OAM DB";
+							reg = <0x40000 0x10000>;
+						};
+
+						sram_section@0x50000 {
+							label = "share memory";
+							reg = <0x50000 0x20000>;
+						};
+
+						sram_section@0x70000 {
+							label = "firmware";
+							reg = <0x70000 0x10000>;
+						};
+					};
+				};
+			};
+		};
+
+		pcie-controller {
+			status = "okay";
+			/*
+			 * The two PCIe units are accessible through
+			 * standard PCIe slots on the board.
+			 */
+			pcie@1,0 {
+				/* Port 0, Lane 0 */
+				status = "okay";
+			};
+			pcie@2,0 {
+				/* Port 1, Lane 0 */
+				status = "disabled";
+			};
+		};
+	};
+
+	reg_i2c0_en: i2c0_en {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c0_en_pins>;
+		regulator-name = "i2c0_en";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		enable-active-high;
+		regulator-always-on;
+		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+	};
+};

@@ -1,0 +1,128 @@
+/*
+ * Device Tree file for Marvell BobK
+ *
+ * Copyright (C) 2015 Marvell
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+#include "msys.dtsi"
+
+/ {
+	model = "Marvell Msys AC3 SoC";
+	compatible = "marvell,msys", "marvell,msys-bobk",
+		     "marvell,armada-370-xp";
+
+	soc {
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
+			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+			  MBUS_ID(0x03, 0x00) 0 0 0xf8000000 0x4000000      /* switch */
+			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000       /* dfx */
+			  MBUS_ID(0x0a, 0x00) 0 0 0x80000000 0x8000000>;    /* dragonite*/
+
+		devbus-bootcs {
+
+			/* Read parameters */
+			devbus,bus-width    = <16>;
+			devbus,turn-off-ps  = <60000>;
+			devbus,badr-skew-ps = <0>;
+			devbus,acc-first-ps = <124000>;
+			devbus,acc-next-ps  = <248000>;
+			devbus,rd-setup-ps  = <0>;
+			devbus,rd-hold-ps   = <0>;
+
+			/* Write parameters */
+			devbus,sync-enable = <0>;
+			devbus,wr-high-ps  = <60000>;
+			devbus,wr-low-ps   = <60000>;
+			devbus,ale-wr-ps   = <60000>;
+		};
+
+		prestera {
+			swic: swich-interrupt-controller@610 {
+				compatible = "marvell,swic_irq";
+				reg = <0x610 0x8>;
+				#interrupt-cells = <1>;
+				#size-cells = <1>;
+				interrupt-controller;
+				interrupts = <34>; /* Use SWIRQ1 because whole SWIRQ0
+						      is used for prestera */
+			};
+
+			servicecpu {
+				sram_sections {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					sram_phy_address = <0xFFE00000>;    /* sram physical address for service cpu */
+					/* in external mode sram base offset is the offset in PCI serviceCPU SRAM window */
+					/* in internal mode, sram base offset should be 0 and has no meaning, we only use sram size */
+					sram_base = <0 0x80000>;  /* sram base offset and size */
+				};
+
+				dram_sections {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					dram_phy_address = <0x4000000>;    /*dram physical address for service cpu */
+					/* in external mode dram base offset is the offset in PCI serviceCPU DRAM window */
+					/* in internal mode, dram base offset should be 0 and has no meaning, we only use dram size */
+					dram_base = <0 0x400000>;    /* dram base offset and size, offset is useless for msys */
+				};
+			};
+
+			mg_swic: mg_swich-interrupt-controller@618 {
+				compatible = "marvell,mg_swic_irq";
+				reg = <0x618 0x8>;
+				#interrupt-cells = <1>;
+				#size-cells = <1>;
+				interrupt-controller;
+				interrupts-extended = <&swic 7>;
+			};
+
+			cm3 {
+				compatible = "marvell,msys-bobk-cm3";
+				reg = <0x40000 0x1F800 /*proc_mem*/
+				       0x5F800 0x800 /*proc_sram*/
+				       0x500 0x4
+				       0x534 0x4
+				       0x54 0x4>;
+				interrupts-extended = <&mg_swic 14>;
+				status = "disabled";
+			};
+			dragonite {
+				compatible = "marvell,msys-bobk-dragonite";
+				reg = <0x20000000 0x14000
+				       0x24000000 0x8000
+				       0x100F829C 0x4>;
+				config_reg = <0x61000000 0x30>; /* dragonite configuration reg*/
+				interrupts = <56>;
+				status = "disabled";
+				dtcm_sections {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					dtcm_section@0 {
+						label = "user memory";	/* this piece of memory is only used in protected mode*/
+						reg = <0 0x1000>;	/*section offset to dtcm_base and section size*/
+					};
+					dtcm_section@0x1000 {
+						label = "shared memory";
+						reg = <0x4000 0x4000>;
+					};
+				};
+			};
+		};
+
+		internal-regs {
+			pinctrl@18000 {
+				compatible = "marvell,bobk-pinctrl";
+			};
+		};
+
+		addr-compl {
+			compatible = "marvell,msys-addr-compl";
+			reg = <MBUS_ID(0x03, 0x00) 0 0x200>; /* Switch MG register base */
+		};
+	};
+};

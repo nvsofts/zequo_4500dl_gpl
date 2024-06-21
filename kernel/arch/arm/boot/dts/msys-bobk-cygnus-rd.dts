@@ -1,0 +1,160 @@
+/*
+ * Device Tree file for Marvell BobK Cygnus reference design board
+ * Supported Boards:
+ * (RD-CYG-48G4XG2XLG-A)
+ *
+ * Copyright (C) 2015 Marvell
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "msys-bobk.dtsi"
+
+/ {
+	model = "Marvell BobK Cygnus Reference Design Board: RD-CYG-48G4XG2XLG-A";
+	compatible = "marvell,msys", "marvell,msys-bobk", "marvell,msys-bobk-cygnus",
+		     "marvell,msys-bobk-cygnus-rd", "marvell,armada-370-xp";
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		/*
+                 * 1GB of plug-in RAM modules by default. The amount
+                 * of memory available can be changed by the
+                 * bootloader according the size of the module
+                 * actually plugged.
+		 */
+		device_type = "memory";
+		reg = <0x00000000 0x00000000 0x00000000 0x40000000>;
+	};
+
+	soc {
+		devbus-bootcs {
+			/* NOR 16 MiB */
+			nor@0 {
+				compatible = "cfi-flash";
+				reg = <0 0x1000000>;
+				bank-width = <2>;
+			};
+		};
+
+		pcie-controller {
+			status = "okay";
+
+			pcie@1,0 {
+				status = "okay";
+			};
+		};
+
+		internal-regs {
+			serial@12000 {
+				status = "okay";
+			};
+
+			serial@12100 {
+				status = "okay";
+			};
+
+			/* Gbe MAC 0 is connected to switch port #62. */
+			/* TODO: Enable the Gbe MAC 0 with fix-link. */
+			ethernet@70000 {
+				status = "disabled";
+			};
+
+			/* Gbe MAC 1 is connected to the out-of-band phy */
+			/* since its 'phy' node's parent node - 'switch/mdio' node has 'smi-indirect-access' flag. */
+			ethernet@74000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "sgmii";
+			};
+
+			spi0: spi@10600 {
+				status = "okay";
+
+				spi-flash@0 {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "mx25l25635e";
+					reg = <0>; /* Chip select 0 */
+					spi-max-frequency = <108000000>;
+				};
+			};
+
+			mvsdio@d4000 {
+				status = "okay";
+				wp-gpios = <&gpio0 18 0>;
+				broken-cd;
+			};
+
+			nfc: nand-flash@d0000 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				status = "okay";
+
+				nfc,nfc-mode  = "normal";       /* normal or ganged */
+				nfc,nfc-dma   = <0>;            /* 0 for no, 1 for dma */
+				nfc,nfc-width = <8>;
+				nfc,ecc-type  = <1>;            /* 4 bit */
+				nfc,num-cs    = <1>;
+
+				mtd0@00000000 {
+					label = "U-Boot";
+					reg = <0x00000000 0x00800000>;
+					read-only;
+				};
+
+				mtd1@00080000 {
+					label = "uImage";
+					reg = <0x00800000 0x00800000>;
+					read-only;
+				};
+
+				mtd2@00140000 {
+					label = "Root";
+					reg = <0x01000000 0x3f000000>;
+				};
+			};
+
+			usb@50000 {
+				status = "okay";
+			};
+
+			i2c0: i2c@11000 {
+				eeprom@50 {
+					compatible = "at,24c64";
+					pagesize = <32>;
+					reg = <0x50>;
+					marvell,board_id_reg = <0x7>;
+				};
+			};
+		};
+
+		prestera {
+			compatible = "marvell,armada-prestera";
+			status = "okay";
+			/* the remote MSYS board ID can be enforced
+			cpss_force_board_id = <0x53>; */
+		};
+	};
+
+	switch {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		mdio {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x57000000 0x8>; /* Switch SMI register base */
+			smi-indirect-access;
+			phy0: ethernet-phy@0 {
+				reg = <0>;
+			};
+		};
+	};
+};

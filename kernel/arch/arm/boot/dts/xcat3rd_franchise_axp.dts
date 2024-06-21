@@ -1,0 +1,185 @@
+/*
+* ***************************************************************************
+* Copyright (C) 2016 Marvell International Ltd.
+* ***************************************************************************
+* This program is free software: you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 2 of the License, or any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* ***************************************************************************
+*/
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "armada-xp-mv78460.dtsi"
+
+/ {
+	model = "Marvell Armada XP Tesla Board";
+	compatible = "marvell,axp-amc", "marvell,armadaxp-mv78460", "marvell,armadaxp", "marvell,armada-370-xp";
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0 0x00000000 0 0x40000000>; /* 1 GB */
+	};
+
+	/*this field is read by mts-arch.c file to classify the project type - dont change!	*/
+	dts_file {
+		file_name = __FILE__;
+	};
+	
+	soc {
+		pcie-mem-aperture = <0x80000000 0x20000000>; /* 512M */
+
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
+			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+			  MBUS_ID(0x01, 0x2f) 0 0 0xf2000000 0x2000000>;
+
+		pcie-controller {
+			status = "okay";
+
+			/*
+			 *Only one slot is physically present as
+			 * standard PCIe slot on the board.
+			 */
+			pcie@1,0 {
+				/* Port 0, Lane 0 */
+				status = "okay";
+			};
+			pcie@2,0 {
+				/* Port 0, Lane 0 */
+				status = "okay";
+			};
+			pcie@3,0 {
+				/* Port 0, Lane 0 */
+				status = "okay";
+			};
+			pcie@4,0 {
+				/* Port 0, Lane 0 */
+				status = "okay";
+			};
+		};
+
+		internal-regs {
+			spi0: spi@10600 {
+				status = "okay";
+
+				spi-flash@0 {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "n25q128a13";
+					reg = <0>; /* Chip select 0 */
+					spi-max-frequency = <108000000>;
+				};
+			};
+
+			i2c0: i2c@11000 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			i2c1: i2c@11100 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			serial@12000 {
+				status = "okay";
+			};
+
+			pinctrl {
+				i2c1_en_pins: i2c1_en_pins {
+					marvell,pins = "mpp22";
+					marvell,function = "gpio";
+				};
+			};
+
+			mdio {
+				phy0: ethernet-phy@0 {
+					reg = <0>;
+				};
+
+				phy1: ethernet-phy@1 {
+					reg = <1>;
+				};
+			};
+
+			ethernet@74000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "rgmii-id";
+			};
+
+			/* Front-side USB slot */
+			usb@50000 {
+				status = "okay";
+			};
+
+			ethernet@70000 {
+				status = "okay";
+				phy = <&phy1>;
+				phy-mode = "rgmii-id";
+			};
+
+			/* Neta working in accelerate mode 1 */
+			bm_pnc@c0000 {
+				neta_cap_bm = <0x0>;
+			};
+
+			/* 1GB Flash via NFC NAND controller */
+			nfc: nand-flash@d0000 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				status = "okay";
+
+				nfc,nfc-mode  = "normal";       /* normal or ganged */
+				nfc,nfc-dma   = <0>;            /* 0 for no, 1 for dma */
+				nfc,nfc-width = <8>;
+				nfc,ecc-type  = <1>;            /* 4 bit */
+				nfc,num-cs    = <1>;
+
+				mtd0@00000000 {
+					label = "U-Boot";
+					reg = <0x00000000 0x00100000>;
+					read-only;
+				};
+
+				mtd1@00100000 {
+					label = "uImage";
+					reg = <0x00100000 0x00400000>;
+					read-only;
+				};
+
+				mtd2@00500000 {
+					label = "Root";
+					reg = <0x00500000 0x3fb00000>;
+				};
+			};
+
+			prestera {
+				compatible = "marvell,armada-prestera", "simple-bus";
+				status = "okay";
+			};
+		};
+	};
+
+	reg_i2c1_en: i2c1_en {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c1_en_pins>;
+		regulator-name = "i2c1_en";
+		regulator-always-on;
+		gpio = <&gpio0 22 GPIO_ACTIVE_LOW>;
+	};
+};
+

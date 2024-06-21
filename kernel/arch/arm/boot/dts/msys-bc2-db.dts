@@ -1,0 +1,246 @@
+/*
+ * Device Tree file for Marvell BobCat2 development board
+ * (DB-DXBC2-MM)
+ *
+ * Copyright (C) 2015 Marvell
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "msys-bc2.dtsi"
+
+/ {
+	model = "Marvell BobCat2 Development Board DB-DXBC2-MM";
+	compatible = "marvell,msys", "marvell,msys-bc2",
+		     "marvell,msys-bc2-db", "marvell,armada-370-xp";
+
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		/*
+                 * 1GB of plug-in RAM modules by default. The amount
+                 * of memory available can be changed by the
+                 * bootloader according the size of the module
+                 * actually plugged.
+		 */
+		device_type = "memory";
+		reg = <0x00000000 0x00000000 0x00000000 0x40000000>;
+	};
+
+	soc {
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
+			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+			  MBUS_ID(0x03, 0x00) 0 0 0xf8000000 0x4000000	/* switch */
+			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000>;	/* dfx */
+
+		devbus-bootcs {
+			pinctrl-names = "default";
+			pinctrl-0 = <&devbus_pins>;
+
+			/* Read parameters */
+			devbus,bus-width    = <16>;
+			devbus,turn-off-ps  = <60000>;
+			devbus,badr-skew-ps = <0>;
+			devbus,acc-first-ps = <124000>;
+			devbus,acc-next-ps  = <248000>;
+			devbus,rd-setup-ps  = <0>;
+			devbus,rd-hold-ps   = <0>;
+
+			/* Write parameters */
+			devbus,sync-enable = <0>;
+			devbus,wr-high-ps  = <60000>;
+			devbus,wr-low-ps   = <60000>;
+			devbus,ale-wr-ps   = <60000>;
+
+			/* NOR 16 MiB */
+			nor@0 {
+				compatible = "cfi-flash";
+				reg = <0 0x1000000>;
+				bank-width = <2>;
+			};
+		};
+
+		pcie-controller {
+			status = "okay";
+
+			pcie@1,0 {
+				status = "okay";
+			};
+		};
+
+		internal-regs {
+			serial@12000 {
+				status = "okay";
+			};
+
+			serial@12100 {
+				status = "disabled";
+			};
+
+			ethernet@70000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "sgmii";
+			};
+
+			ethernet@74000 {
+				status = "okay";
+				phy = <&phy1>;
+				phy-mode = "sgmii";
+			};
+
+			i2c0: i2c@11000 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			i2c1: i2c@11100 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			mdio {
+				phy0: ethernet-phy@0 {
+					reg = <999>;
+				};
+
+				phy1: ethernet-phy@1 {
+					reg = <999>;
+				};
+			};
+
+			spi0: spi@10600 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&spi_pins>;
+				status = "okay";
+
+				spi-flash@0 {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "mx25l25635e";
+					reg = <0>; /* Chip select 0 */
+					spi-max-frequency = <108000000>;
+				};
+			};
+
+			mvsdio@d4000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&sdio_pins>;
+				status = "okay";
+				wp-gpios = <&gpio0 18 0>;
+				broken-cd;
+			};
+
+			nfc: nand-flash@d0000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&nand_pins>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				status = "okay";
+
+				nfc,nfc-mode  = "normal";       /* normal or ganged */
+				nfc,nfc-dma   = <0>;            /* 0 for no, 1 for dma */
+				nfc,nfc-width = <8>;
+				nfc,ecc-type  = <1>;            /* 4 bit */
+				nfc,num-cs    = <1>;
+
+				mtd0@00000000 {
+					label = "U-Boot";
+					reg = <0x00000000 0x00800000>;
+					read-only;
+				};
+
+				mtd1@00080000 {
+					label = "uImage";
+					reg = <0x00800000 0x00800000>;
+					read-only;
+				};
+
+				mtd2@00140000 {
+					label = "Root";
+					reg = <0x01000000 0x3f000000>;
+				};
+			};
+
+			i2c0: i2c@11000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c0_pins>;
+				eeprom@50 {
+					compatible = "at,24c64";
+					pagesize = <32>;
+					reg = <0x50>;
+					marvell,board_id_reg = <0x7>;
+				};
+			};
+		};
+
+
+
+		prestera {
+			pinctrl-names = "default", "default";
+			pinctrl-0 = <&pp_pin>;
+			pinctrl-1 = <&slvsmi_pins>;
+			status = "okay";
+			/*  the CPSS board ID can be enforced
+			cpss_force_board_id = <0x10>; */
+
+			servicecpu {
+				status = "disabled";
+				sram_sections {
+					/* the sum of all sections' size should be equal to sram_base's size */
+					/* there should be no gap between 2 continuous sections */
+					/* the section lable should be one of following: */
+					/* "L2 Cache", "free area", "host memory", "OAM DB" */
+					/* the current sections definition is used for 2M SRAM (for BC2). */
+					sram_section@0 {
+						label = "L2 Cache";
+						reg = <0 0x100000>;    /* section offset to sram_base and section size */
+					};
+
+					sram_section@0x100000 {
+						label = "host memory";
+						reg = <0x100000 0x80000>;
+					};
+
+					sram_section@0x180000 {
+						label = "OAM DB";
+						reg = <0x180000 0x80000>;
+					};
+				};
+
+				dram_sections {
+					/* the sum of all sections' size should be equal to dram_base's size */
+					/* there should be no gap between 2 continuous sections */
+					/* the section lable should be one of following: */
+					/* "firmware" and "share memory" */
+					dram_section@0x0 {
+						label = "firmware";		/* section offset to dram_base and section size */
+						reg = <0 0x200000>;
+					};
+
+					dram_section@0x200000 {
+						label = "share memory";
+						reg = <0x200000 0x200000>;
+					};
+				};
+			};
+
+			cm3 {
+			        status = "okay";
+			};
+		};
+
+		addr-compl {
+			compatible = "marvell,msys-addr-compl";
+			reg = <MBUS_ID(0x03, 0x00) 0 0x200>; /* Switch MG register base */
+		};
+	};
+};

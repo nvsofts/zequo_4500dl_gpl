@@ -1,0 +1,58 @@
+/*
+ * Device Tree file for Marvell BobCat2
+ *
+ * Copyright (C) 2015 Marvell
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+#include "msys.dtsi"
+
+/ {
+	model = "Marvell Msys BC3 SoC";
+	compatible = "marvell,msys", "marvell,msys-bc2",
+		     "marvell,armada-370-xp";
+	soc {
+		prestera {
+			servicecpu {
+				sram_sections {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					sram_phy_address = <0xFFD00000>;    /*sram physical address for service cpu*/
+					/* in external mode sram base offset is the offset in PCI serviceCPU SRAM window */
+					/* in internal mode, sram base offset should be 0 and has no meaning, we only use sram size */
+					sram_base = <0 0x200000>;  /* sram base offset and size */
+				};
+
+				dram_sections {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					dram_phy_address = <0x4000000>;    /*dram physical address for service cpu */
+					/* in external mode dram base offset is the offset in PCI serviceCPU DRAM window */
+					/* in internal mode, dram base offset should be 0 and has no meaning, we only use dram size */
+					dram_base = <0 0x400000>;    /* dram base offset and size, offset is useless for msys */
+				};
+			};
+
+			cm3 {
+				compatible = "marvell,msys-bc2-cm3";
+				reg = <0x40000 0x18000
+				       0x20000 0x8000
+				       0x500 0x4
+				       0x534 0x4
+				       0x30 0x16>;
+				interrupts = <33>;
+				status = "disabled";
+			};
+		};
+
+		internal-regs {
+			pinctrl@18000 {
+				compatible = "marvell,bc2-pinctrl";
+			};
+		};
+	};
+};
+
